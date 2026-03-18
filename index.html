@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>⚡ AI Translator</title>
+  <link href="https://fonts.googleapis.com/css2?family=VT323&family=Noto+Serif+JP:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+    /* ── THEMES ── */
+    [data-theme="dark"]{
+      --bg:#080810;--surf:#0e0e1a;--surf2:#131325;--border:#1c1c30;--border2:#242440;
+      --text:#dde1f0;--muted:#3d4466;--muted2:#64748b;
+      --accent:#6366f1;--accent2:#818cf8;--inp-bg:#060610;--topbar-bg:#0e0e1a;
+      --param-val:#94a3b8;--font:'Segoe UI',system-ui,sans-serif;
+      --radius:8px;--radius-sm:5px;--radius-pill:20px;--shadow:none;--scrollbar:#242440;
+    }
+    [data-theme="light"]{
+      --bg:#f1f2f7;--surf:#ffffff;--surf2:#f5f6fb;--border:#e2e4ef;--border2:#d4d6e8;
+      --text:#1e1e3a;--muted:#c0c4d8;--muted2:#6b7280;
+      --accent:#6366f1;--accent2:#4f46e5;--inp-bg:#f8f9fd;--topbar-bg:#ffffff;
+      --param-val:#374151;--font:'Segoe UI',system-ui,sans-serif;
+      --radius:8px;--radius-sm:5px;--radius-pill:20px;--shadow:0 1px 4px rgba(0,0,0,.07);--scrollbar:#d4d6e8;
+    }
+    [data-theme="glass"]{
+      --bg:transparent;--surf:rgba(255,255,255,.07);--surf2:rgba(255,255,255,.04);
+      --border:rgba(120,180,255,.18);--border2:rgba(100,160,255,.28);
+      --text:#e8f4ff;--muted:rgba(150,200,255,.35);--muted2:rgba(160,210,255,.65);
+      --accent:#38bdf8;--accent2:#7dd3fc;--inp-bg:rgba(255,255,255,.06);--topbar-bg:rgba(10,20,60,.52);
+      --param-val:#93c5fd;--font:'Segoe UI',system-ui,sans-serif;
+      --radius:12px;--radius-sm:8px;--radius-pill:24px;--shadow:0 4px 20px rgba(0,0,0,.2);--scrollbar:rgba(100,160,255,.3);
+    }
+    [data-theme="terminal"]{
+      --bg:#020d02;--surf:#060f06;--surf2:#091509;--border:#0e280e;--border2:#163416;
+      --text:#22ff44;--muted:#0c3a0c;--muted2:#1a8a1a;
+      --accent:#00ff41;--accent2:#39ff14;--inp-bg:#030a03;--topbar-bg:#060f06;
+      --param-val:#2ccc44;--font:'VT323','Courier New',monospace;
+      --radius:2px;--radius-sm:1px;--radius-pill:2px;--shadow:0 0 12px rgba(0,255,65,.15);--scrollbar:#163416;
+    }
+    [data-theme="sakura"]{
+      --bg:#fdf0f3;--surf:#fff5f7;--surf2:#fde8ee;--border:#f5ccd8;--border2:#edafc0;
+      --text:#3d1525;--muted:#f0b8cc;--muted2:#b06080;
+      --accent:#e84074;--accent2:#c2185b;--inp-bg:#fffafb;--topbar-bg:#fff5f7;
+      --param-val:#9d4060;--font:'Noto Serif JP','Segoe UI',serif;
+      --radius:10px;--radius-sm:6px;--radius-pill:24px;--shadow:0 2px 10px rgba(232,64,116,.08);--scrollbar:#f0b8cc;
+    }
+
+    /* ── SPECIAL BGs ── */
+    #glass-bg{display:none;position:fixed;inset:0;z-index:-1;
+      background:linear-gradient(135deg,#050e2e 0%,#071535 30%,#0a1f50 55%,#062040 80%,#04122a 100%)}
+    #glass-bg::before{content:'';position:absolute;inset:0;
+      background:radial-gradient(ellipse at 20% 30%,rgba(56,189,248,.18) 0%,transparent 50%),
+        radial-gradient(ellipse at 80% 70%,rgba(99,102,241,.2) 0%,transparent 50%)}
+    [data-theme="glass"] #glass-bg{display:block}
+    [data-theme="glass"] body{background:transparent!important}
+    #terminal-overlay{display:none;position:fixed;inset:0;z-index:9999;pointer-events:none;
+      background:repeating-linear-gradient(to bottom,transparent 0,transparent 2px,rgba(0,0,0,.09) 2px,rgba(0,0,0,.09) 4px)}
+    [data-theme="terminal"] #terminal-overlay{display:block}
+    [data-theme="terminal"] *{text-shadow:0 0 6px rgba(0,255,65,.4)}
+    .petal{display:none;position:fixed;pointer-events:none;z-index:0;font-size:14px;animation:fall linear infinite;opacity:.45}
+    [data-theme="sakura"] .petal{display:block}
+    @keyframes fall{0%{transform:translateY(-20px) rotate(0deg);opacity:0}10%{opacity:.45}90%{opacity:.25}100%{transform:translateY(100vh) rotate(360deg);opacity:0}}
+
+    /* ── BASE ── */
+    html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;transition:background .3s,color .3s}
+    body{display:flex;flex-direction:column;overflow:hidden}
+    input,select,textarea,button{font-family:var(--font);font-size:inherit;color:inherit}
+    ::-webkit-scrollbar{width:4px;height:4px}
+    ::-webkit-scrollbar-thumb{background:var(--scrollbar);border-radius:2px}
+    input[type=range]{appearance:none;background:var(--border2);height:3px;border-radius:2px;outline:none;cursor:pointer;width:100%}
+    input[type=range]::-webkit-slider-thumb{appearance:none;width:12px;height:12px;border-radius:50%;background:var(--accent)}
+
+    /* glass backdrops */
+    [data-theme="glass"] #topbar,[data-theme="glass"] #panel,[data-theme="glass"] #params,
+    [data-theme="glass"] .hist-item,[data-theme="glass"] .model-card,[data-theme="glass"] #theme-dropdown,
+    [data-theme="glass"] #model-picker-dropdown{backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+    [data-theme="glass"] textarea,[data-theme="glass"] #result-box,[data-theme="glass"] .inp,
+    [data-theme="glass"] #langbar select{backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);background:rgba(255,255,255,.06)!important}
+    [data-theme="glass"] #topbar{background:rgba(10,20,60,.55)!important}
+    [data-theme="glass"] #panel{background:rgba(8,18,55,.72)!important}
+    [data-theme="glass"] #theme-dropdown,[data-theme="glass"] #model-picker-dropdown{background:rgba(8,18,55,.88)!important}
+
+    /* ── TOPBAR ── */
+    #topbar{display:flex;align-items:center;height:50px;padding:0 14px;gap:8px;flex-shrink:0;
+      background:var(--topbar-bg);border-bottom:1px solid var(--border);box-shadow:var(--shadow);
+      position:relative;z-index:10;transition:background .3s}
+    .logo{font-size:14px;font-weight:700;letter-spacing:-.3px;white-space:nowrap;flex-shrink:0}
+    [data-theme="terminal"] .logo{font-size:18px;color:var(--accent);letter-spacing:2px}
+    [data-theme="sakura"] .logo{color:var(--accent)}
+    [data-theme="sakura"] .logo::after{content:" 🌸"}
+
+    /* Model picker in topbar */
+    #model-picker-wrap{position:relative;flex:1;max-width:320px}
+    #model-picker-btn{display:flex;align-items:center;gap:8px;width:100%;padding:5px 10px;
+      background:var(--surf2);border:1px solid var(--border2);border-radius:var(--radius-sm);
+      cursor:pointer;transition:border-color .12s;text-align:left}
+    #model-picker-btn:hover{border-color:var(--accent)}
+    #model-picker-btn.active{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,transparent)}
+    .mpb-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+    .mpb-info{flex:1;min-width:0}
+    .mpb-name{font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .mpb-sub{font-size:9px;color:var(--muted2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .mpb-arrow{font-size:9px;color:var(--muted2);flex-shrink:0;transition:transform .15s}
+    #model-picker-btn.active .mpb-arrow{transform:rotate(180deg)}
+    #model-picker-dropdown{display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;
+      background:var(--surf);border:1px solid var(--border2);border-radius:var(--radius);
+      padding:6px;z-index:200;box-shadow:0 8px 30px rgba(0,0,0,.3);min-width:280px}
+    #model-picker-dropdown.open{display:flex;flex-direction:column;gap:3px}
+    .mpd-label{font-size:9px;color:var(--muted2);text-transform:uppercase;letter-spacing:1px;padding:2px 6px 5px}
+    .mpd-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--radius-sm);
+      border:1px solid transparent;cursor:pointer;transition:all .12s;background:transparent}
+    .mpd-item:hover{background:color-mix(in srgb,var(--accent) 8%,transparent);border-color:var(--border)}
+    .mpd-item.selected{background:color-mix(in srgb,var(--accent) 12%,transparent);border-color:var(--accent)}
+    .mpd-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+    .mpd-info{flex:1;min-width:0}
+    .mpd-name{font-size:11px;font-weight:600;color:var(--text)}
+    .mpd-model{font-size:9px;color:var(--muted2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .mpd-check{font-size:11px;color:var(--accent);opacity:0}
+    .mpd-item.selected .mpd-check{opacity:1}
+    .mpd-empty{font-size:11px;color:var(--muted2);padding:14px 10px;text-align:center}
+
+    #topbar-right{display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:auto}
+    .icon-btn{width:30px;height:30px;border-radius:var(--radius-sm);border:1px solid var(--border2);flex-shrink:0;
+      background:transparent;color:var(--muted2);cursor:pointer;font-size:14px;
+      display:flex;align-items:center;justify-content:center;transition:all .12s}
+    .icon-btn:hover{color:var(--text)}
+    .icon-btn.active{color:var(--accent);border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent)}
+
+    /* Theme picker */
+    #theme-picker-wrap{position:relative}
+    #theme-dropdown{display:none;position:absolute;top:calc(100% + 6px);right:0;
+      background:var(--surf);border:1px solid var(--border2);border-radius:var(--radius);
+      padding:8px;z-index:200;min-width:210px;box-shadow:0 8px 30px rgba(0,0,0,.3)}
+    #theme-dropdown.open{display:flex;flex-direction:column;gap:3px}
+    .theme-dd-label{font-size:9px;color:var(--muted2);text-transform:uppercase;letter-spacing:1px;padding:2px 4px 6px}
+    .theme-opt{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:var(--radius-sm);
+      border:1px solid transparent;cursor:pointer;transition:all .12s;background:transparent;width:100%;text-align:left}
+    .theme-opt:hover{background:color-mix(in srgb,var(--accent) 8%,transparent);border-color:var(--border)}
+    .theme-opt.current{background:color-mix(in srgb,var(--accent) 12%,transparent);border-color:var(--accent)}
+    .theme-swatch{width:28px;height:28px;border-radius:6px;flex-shrink:0;
+      border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:13px}
+    .theme-info{flex:1}.theme-name{font-size:11px;font-weight:600;color:var(--text)}
+    .theme-desc{font-size:9px;color:var(--muted2);margin-top:1px}
+    .theme-check{font-size:12px;color:var(--accent);opacity:0}
+    .theme-opt.current .theme-check{opacity:1}
+
+    /* ── MAIN ── */
+    #main{flex:1;display:flex;overflow:hidden;position:relative;z-index:1}
+    #editor{flex:1;display:flex;flex-direction:column;padding:12px;gap:10px;overflow:hidden;transition:margin-right .2s}
+
+    #langbar{display:flex;align-items:center;gap:8px}
+    #langbar select{flex:1;padding:7px 10px;background:var(--surf);border:1px solid var(--border2);
+      border-radius:var(--radius-sm);color:var(--text);outline:none;cursor:pointer}
+    #langbar select:focus{border-color:var(--accent)}
+    #swap-btn{padding:7px 10px;background:var(--surf2);border:1px solid var(--border2);
+      border-radius:var(--radius-sm);color:var(--muted2);cursor:pointer;font-size:13px;transition:all .12s}
+    #swap-btn:hover{color:var(--text);border-color:var(--accent)}
+
+    #prompt-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+    #prompt-bar .lbl{font-size:10px;color:var(--muted2)}
+    .prompt-pill{padding:2px 9px;border-radius:var(--radius-pill);border:1px solid var(--border2);
+      background:transparent;color:var(--muted2);font-size:10px;cursor:pointer;transition:all .12s}
+    .prompt-pill.active{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent2)}
+
+    #textarea-row{display:flex;flex:1;gap:10px;min-height:0}
+    .ta-wrap{flex:1;position:relative;display:flex;flex-direction:column}
+    textarea,#result-box{flex:1;background:var(--surf);border:1px solid var(--border2);border-radius:var(--radius);
+      padding:12px;font-size:13px;line-height:1.65;resize:none;outline:none;color:var(--text);transition:border-color .2s}
+    [data-theme="terminal"] textarea,[data-theme="terminal"] #result-box{font-size:15px}
+    textarea::placeholder{color:var(--muted)}
+    textarea:focus{border-color:color-mix(in srgb,var(--accent) 60%,transparent)}
+    #result-box{overflow:auto;white-space:pre-wrap}
+    .char-count{position:absolute;bottom:8px;right:10px;font-size:10px;color:var(--muted2);pointer-events:none}
+    #copy-btn{position:absolute;bottom:8px;right:10px;padding:2px 8px;background:var(--surf2);
+      border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--muted2);font-size:10px;cursor:pointer;display:none}
+    #copy-btn:hover{color:var(--text)}
+    #translate-col{display:flex;flex-direction:column;justify-content:center;gap:6px}
+    #translate-btn{width:44px;height:44px;border-radius:var(--radius);border:none;font-size:18px;
+      cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;color:#fff}
+    .shortcut-hint{font-size:8px;color:var(--muted2);text-align:center;line-height:1.3}
+
+    #params{background:var(--surf);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px}
+    #params-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+    .param-item .param-header{display:flex;justify-content:space-between;margin-bottom:3px}
+    .param-label{font-size:10px;color:var(--muted2);text-transform:uppercase;letter-spacing:.6px}
+    .param-val{font-size:11px;color:var(--param-val);font-family:monospace}
+
+    /* ── PANEL ── */
+    #panel{position:absolute;top:0;right:0;bottom:0;width:400px;
+      background:var(--surf);border-left:1px solid var(--border);display:none;flex-direction:column;z-index:50}
+    #panel.open{display:flex}
+    #panel-header{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+    #panel-title{font-size:12px;font-weight:700}
+    #panel-close{background:none;border:none;color:var(--muted2);cursor:pointer;font-size:15px}
+    #panel-body{flex:1;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:0}
+
+    /* ── SHARED FORM ── */
+    .inp{width:100%;padding:8px 10px;background:var(--inp-bg);border:1px solid var(--border2);
+      border-radius:var(--radius-sm);color:var(--text);outline:none}
+    .inp:focus{border-color:color-mix(in srgb,var(--accent) 60%,transparent)}
+    textarea.inp{resize:vertical;line-height:1.5;font-family:monospace;font-size:11px}
+    select.inp{cursor:pointer}
+    .field-label{font-size:10px;color:var(--muted2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px;display:block}
+    .field-wrap{display:flex;flex-direction:column;gap:4px}
+    .divider{border:none;border-top:1px solid var(--border);margin:10px 0}
+    .info-box{padding:8px;border-radius:var(--radius-sm)}
+    .info-box p{font-size:10px;color:var(--muted2);line-height:1.5}
+    .empty-msg{text-align:center;color:var(--muted2);padding:40px 0;font-size:12px}
+    .save-btn{padding:8px 14px;border-radius:var(--radius-sm);font-size:12px;cursor:pointer;font-weight:600;
+      background:color-mix(in srgb,var(--accent) 14%,transparent);
+      border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);color:var(--accent2)}
+    .save-btn:hover{background:color-mix(in srgb,var(--accent) 24%,transparent)}
+    .cancel-btn{padding:8px 14px;border-radius:var(--radius-sm);font-size:12px;cursor:pointer;
+      background:transparent;border:1px solid var(--border2);color:var(--muted2)}
+    .cancel-btn:hover{color:var(--text);border-color:var(--border2)}
+    .new-btn{padding:8px 12px;border-radius:var(--radius-sm);font-size:12px;cursor:pointer;font-weight:600;
+      background:color-mix(in srgb,var(--accent) 8%,transparent);
+      border:1px solid color-mix(in srgb,var(--accent) 28%,transparent);color:var(--accent2)}
+    .danger-btn{padding:3px 8px;border-radius:var(--radius-sm);font-size:10px;cursor:pointer;
+      border:1px solid rgba(239,68,68,.3);background:transparent;color:#f87171}
+    .danger-btn:hover{background:rgba(239,68,68,.1)}
+
+    /* ── MODEL CARDS ── */
+    #models-list{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+    .model-card{background:var(--surf2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;transition:border-color .12s}
+    .model-card.active-model{border-color:var(--accent)}
+    .mc-header{display:flex;align-items:center;gap:8px}
+    .mc-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+    .mc-name{font-size:12px;font-weight:700;flex:1}
+    .mc-type{font-size:9px;color:var(--muted2);background:var(--border2);padding:1px 6px;border-radius:var(--radius-pill)}
+    .mc-actions{display:flex;gap:4px}
+    .mc-info{margin-top:6px;font-size:10px;color:var(--muted2);font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .mc-act-btn{padding:2px 8px;border-radius:var(--radius-sm);font-size:10px;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--muted2)}
+    .mc-act-btn:hover{color:var(--text)}
+    .mc-act-btn.use{border-color:var(--accent);color:var(--accent2);background:color-mix(in srgb,var(--accent) 10%,transparent)}
+
+    /* Token status */
+    .token-status{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:var(--radius-pill);font-size:10px;font-weight:600}
+    .token-status.ok{background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3);color:#34d399}
+    .token-status.err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#f87171}
+    .token-status.idle{background:var(--surf2);border:1px solid var(--border2);color:var(--muted2)}
+    .test-btn{padding:4px 10px;border-radius:var(--radius-sm);font-size:10px;cursor:pointer;font-weight:600;
+      background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.3);color:#34d399}
+    .test-btn:hover{background:rgba(52,211,153,.2)}
+
+    /* Tabs within panel */
+    .panel-tabs{display:flex;gap:2px;margin-bottom:14px;background:var(--surf2);border-radius:var(--radius-sm);padding:3px}
+    .panel-tab{flex:1;padding:5px 8px;border-radius:calc(var(--radius-sm) - 1px);font-size:11px;font-weight:600;
+      cursor:pointer;border:none;background:transparent;color:var(--muted2);transition:all .12s}
+    .panel-tab.active{background:var(--surf);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.15)}
+
+    /* Prompts */
+    .prompt-item{background:var(--surf2);border:1px solid var(--border);border-radius:var(--radius);padding:12px}
+    .prompt-item.active-prompt{border-color:var(--accent)}
+    .prompt-item-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+    .prompt-name{font-size:12px;font-weight:600}
+    .prompt-actions{display:flex;gap:4px}
+    .p-btn{padding:2px 7px;border-radius:var(--radius-sm);font-size:10px;cursor:pointer}
+    .p-btn.use{border:1px solid var(--border2);background:transparent;color:var(--muted2)}
+    .p-btn.use.using{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent2)}
+    .p-btn.edit{border:1px solid var(--border2);background:transparent;color:var(--muted2)}
+    .p-btn.del{border:1px solid rgba(239,68,68,.3);background:transparent;color:#f87171}
+    .prompt-preview{font-size:10px;color:var(--muted2);line-height:1.5;max-height:44px;overflow:hidden}
+    #prompt-editor{display:none;flex-direction:column;gap:10px}
+    #prompt-editor.open{display:flex}
+    #prompt-list-view{display:flex;flex-direction:column;gap:8px}
+    #prompt-list-view.hidden{display:none}
+
+    /* History */
+    .hist-item{background:var(--surf2);border:1px solid var(--border);border-radius:var(--radius);padding:10px;cursor:pointer;transition:border-color .12s}
+    .hist-item:hover{border-color:var(--accent)}
+    .hist-meta{display:flex;justify-content:space-between;margin-bottom:5px}
+    .hist-src,.hist-tgt{font-size:11px;line-height:1.5;max-height:36px;overflow:hidden}
+    .hist-tgt{color:var(--muted2);margin-top:3px}
+    .hist-footer{margin-top:5px;font-size:9px;color:var(--muted2)}
+
+    /* Terminal extras */
+    [data-theme="terminal"] #result-box.loaded::after{content:"█";animation:blink 1s step-end infinite;color:var(--accent)}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+    /* Sakura */
+    [data-theme="sakura"] #topbar{background:linear-gradient(90deg,#fff5f7,#fde8f0)!important}
+    /* Light */
+    [data-theme="light"] #topbar{box-shadow:0 1px 6px rgba(0,0,0,.06)}
+
+    /* Form section dividers */
+    .form-section{display:flex;flex-direction:column;gap:10px}
+    .form-section-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted2);margin-bottom:2px}
+  </style>
+</head>
+<body>
+
+<div id="glass-bg"></div>
+<div id="terminal-overlay"></div>
+<div class="petal" style="left:5%;animation-duration:8s;animation-delay:0s">🌸</div>
+<div class="petal" style="left:18%;animation-duration:11s;animation-delay:2s">🌺</div>
+<div class="petal" style="left:33%;animation-duration:9s;animation-delay:4s">🌸</div>
+<div class="petal" style="left:52%;animation-duration:13s;animation-delay:1s">🌸</div>
+<div class="petal" style="left:67%;animation-duration:10s;animation-delay:6s">🌺</div>
+<div class="petal" style="left:81%;animation-duration:12s;animation-delay:3s">🌸</div>
+<div class="petal" style="left:92%;animation-duration:8s;animation-delay:5s">🌸</div>
+
+<!-- TOPBAR -->
+<div id="topbar">
+  <span class="logo">⚡ AI Translator</span>
+
+  <!-- Model picker -->
+  <div id="model-picker-wrap">
+    <button id="model-picker-btn">
+      <div class="mpb-dot" id="mpb-dot"></div>
+      <div class="mpb-info">
+        <div class="mpb-name" id="mpb-name">모델을 선택하세요</div>
+        <div class="mpb-sub" id="mpb-sub">⚙️ 설정에서 모델을 추가하세요</div>
+      </div>
+      <span class="mpb-arrow">▼</span>
+    </button>
+    <div id="model-picker-dropdown"></div>
+  </div>
+
+  <div id="topbar-right">
+    <div id="theme-picker-wrap">
+      <button class="icon-btn" id="btn-theme" title="테마">🎨</button>
+      <div id="theme-dropdown"></div>
+    </div>
+    <button class="icon-btn" id="btn-prompts" title="프롬프트">📝</button>
+    <button class="icon-btn" id="btn-history" title="히스토리">🕐</button>
+    <button class="icon-btn" id="btn-models" title="모델 관리">⚙️</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+  <div id="editor">
+    <div id="langbar">
+      <select id="src-lang"></select>
+      <button id="swap-btn">⇄</button>
+      <select id="tgt-lang"></select>
+    </div>
+    <div id="prompt-bar">
+      <span class="lbl">프롬프트:</span>
+      <div id="prompt-pills"></div>
+    </div>
+    <div id="textarea-row">
+      <div class="ta-wrap">
+        <textarea id="src-text" placeholder="번역할 텍스트 입력... (Ctrl+Enter로 번역)"></textarea>
+        <span id="char-count" class="char-count">0자</span>
+      </div>
+      <div id="translate-col">
+        <button id="translate-btn">→</button>
+        <span class="shortcut-hint">Ctrl<br>Enter</span>
+      </div>
+      <div class="ta-wrap">
+        <div id="result-box"><span style="color:var(--muted)">번역 결과</span></div>
+        <button id="copy-btn">복사</button>
+      </div>
+    </div>
+    <div id="params">
+      <div id="params-grid">
+        <div class="param-item"><div class="param-header"><span class="param-label">Temperature</span><span class="param-val" id="val-temp">0.30</span></div><input type="range" id="sl-temp" min="0" max="2" step="0.05" value="0.3"></div>
+        <div class="param-item"><div class="param-header"><span class="param-label">Max Tokens</span><span class="param-val" id="val-tokens">2000</span></div><input type="range" id="sl-tokens" min="100" max="8000" step="100" value="2000"></div>
+        <div class="param-item"><div class="param-header"><span class="param-label">Top P</span><span class="param-val" id="val-topp">0.90</span></div><input type="range" id="sl-topp" min="0" max="1" step="0.05" value="0.9"></div>
+        <div class="param-item"><div class="param-header"><span class="param-label">Top K</span><span class="param-val" id="val-topk">40</span></div><input type="range" id="sl-topk" min="1" max="100" step="1" value="40"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PANEL -->
+  <div id="panel">
+    <div id="panel-header">
+      <span id="panel-title"></span>
+      <button id="panel-close">✕</button>
+    </div>
+    <div id="panel-body">
+
+      <!-- MODELS PANEL -->
+      <div id="content-models" style="display:none;flex-direction:column;gap:0">
+        <div id="models-list-view">
+          <button class="new-btn" id="new-model-btn" style="width:100%">+ 새 모델 추가</button>
+          <div id="models-list"></div>
+        </div>
+        <!-- Model editor -->
+        <div id="model-editor" style="display:none;flex-direction:column;gap:0">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <span style="font-size:12px;font-weight:700" id="me-title">새 모델</span>
+            <button id="me-back" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:12px">← 목록으로</button>
+          </div>
+
+          <!-- Type tabs -->
+          <div class="panel-tabs" style="margin-bottom:14px">
+            <button class="panel-tab active" data-type="vertex" id="tab-vertex">🌐 Vertex AI</button>
+            <button class="panel-tab" data-type="custom" id="tab-custom">🔧 Custom</button>
+          </div>
+
+          <!-- VERTEX FORM -->
+          <div id="form-vertex" class="form-section">
+            <div class="field-wrap"><label class="field-label">이름 (표시용)</label><input type="text" class="inp" id="v-name" placeholder="예: Gemini 2.5 Pro"></div>
+            <div class="field-wrap"><label class="field-label">모델명</label><input type="text" class="inp" id="v-model" placeholder="예: gemini-2.5-pro-preview-05-06"></div>
+            <div class="field-wrap"><label class="field-label">Project ID</label><input type="text" class="inp" id="v-project" placeholder="my-gcp-project"></div>
+            <div class="field-wrap"><label class="field-label">Vertex Client Email</label><input type="email" class="inp" id="v-email" placeholder="name@project.iam.gserviceaccount.com"></div>
+            <div class="field-wrap"><label class="field-label">Vertex Private Key</label><textarea class="inp" id="v-key" rows="4" placeholder="-----BEGIN PRIVATE KEY-----&#10;MIIEvQ...&#10;-----END PRIVATE KEY-----"></textarea></div>
+            <div class="field-wrap">
+              <label class="field-label">Region</label>
+              <select class="inp" id="v-region">
+                <option value="us-central1">us-central1 (Iowa)</option>
+                <option value="us-east1">us-east1 (S.Carolina)</option>
+                <option value="us-east4">us-east4 (N.Virginia)</option>
+                <option value="us-west1">us-west1 (Oregon)</option>
+                <option value="europe-west1">europe-west1 (Belgium)</option>
+                <option value="europe-west4">europe-west4 (Netherlands)</option>
+                <option value="asia-northeast1">asia-northeast1 (Tokyo)</option>
+                <option value="asia-northeast3">asia-northeast3 (Seoul)</option>
+                <option value="asia-southeast1">asia-southeast1 (Singapore)</option>
+              </select>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <button class="test-btn" id="v-test-btn">🔑 토큰 테스트</button>
+              <span class="token-status idle" id="v-token-status">● 미테스트</span>
+            </div>
+            <div class="info-box" style="background:rgba(52,211,153,.06);border:1px solid rgba(52,211,153,.18)">
+              <p>💡 GCP 콘솔 → IAM → 서비스 계정 → 키 → JSON에서 값을 복사하세요.<br>필요 권한: <code style="background:var(--border2);padding:1px 4px;border-radius:2px">Vertex AI User</code></p>
+            </div>
+          </div>
+
+          <!-- CUSTOM FORM -->
+          <div id="form-custom" class="form-section" style="display:none">
+            <div class="field-wrap"><label class="field-label">이름 (표시용)</label><input type="text" class="inp" id="c-name" placeholder="예: GitHub Copilot Gemini"></div>
+            <div class="field-wrap"><label class="field-label">요청 모델명</label><input type="text" class="inp" id="c-model" placeholder="예: gemini-3-pro-preview"></div>
+            <div class="field-wrap"><label class="field-label">URL</label><input type="text" class="inp" id="c-url" placeholder="https://api.githubcopilot.com/chat/completions"></div>
+            <div class="field-wrap"><label class="field-label">키/패스워드</label><input type="password" class="inp" id="c-key" placeholder="API Key 또는 Token"></div>
+            <div class="field-wrap">
+              <label class="field-label">추가 파라미터 (줄마다 key=value)</label>
+              <textarea class="inp" id="c-params" rows="6"
+                placeholder="temperature=0.7&#10;max_tokens=2000&#10;header::Authorization=Bearer TOKEN&#10;header::x-custom-header=value"></textarea>
+              <div class="info-box" style="margin-top:4px;background:color-mix(in srgb,var(--accent) 5%,transparent);border:1px solid color-mix(in srgb,var(--accent) 15%,transparent)">
+                <p>• 일반: <code style="background:var(--border2);padding:1px 4px;border-radius:2px">key=value</code> → 요청 body에 추가<br>
+                   • 헤더: <code style="background:var(--border2);padding:1px 4px;border-radius:2px">header::name=value</code> → 요청 헤더에 추가<br>
+                   • 숫자/boolean 자동 감지, JSON 배열/객체도 지원</p>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:8px;margin-top:14px">
+            <button class="save-btn" id="me-save" style="flex:1">저장</button>
+            <button class="cancel-btn" id="me-cancel">취소</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PROMPTS PANEL -->
+      <div id="content-prompts" style="display:none;flex-direction:column;gap:0">
+        <div id="prompt-list-view">
+          <button class="new-btn" id="new-prompt-btn" style="width:100%">+ 새 프롬프트 추가</button>
+          <div class="info-box" style="margin-top:8px;background:color-mix(in srgb,var(--accent) 5%,transparent);border:1px solid color-mix(in srgb,var(--accent) 15%,transparent)">
+            <p>💡 <code style="background:var(--border2);padding:1px 4px;border-radius:3px">{source_language}</code> <code style="background:var(--border2);padding:1px 4px;border-radius:3px">{target_language}</code> 변수 사용 가능</p>
+          </div>
+          <div id="prompts-list" style="display:flex;flex-direction:column;gap:8px;margin-top:10px"></div>
+        </div>
+        <div id="prompt-editor">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <span style="font-size:12px;font-weight:700" id="editor-title">새 프롬프트</span>
+            <button id="editor-close" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:14px">✕</button>
+          </div>
+          <div class="field-wrap" style="margin-bottom:8px"><label class="field-label">이름</label><input type="text" class="inp" id="edit-name"></div>
+          <div class="field-wrap"><label class="field-label">내용</label><textarea class="inp" id="edit-content" rows="9"></textarea></div>
+          <button class="save-btn" id="editor-save" style="margin-top:10px">저장</button>
+        </div>
+      </div>
+
+      <!-- HISTORY PANEL -->
+      <div id="content-history" style="display:none;flex-direction:column;gap:8px">
+        <div id="history-list"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════════
+const THEMES = {
+  dark:    {name:"다크",        desc:"Deep Space", icon:"🌑", swatch:"linear-gradient(135deg,#080810,#242440)"},
+  light:   {name:"라이트",      desc:"Clean White",icon:"☀️", swatch:"linear-gradient(135deg,#f1f2f7,#e2e4ef)"},
+  glass:   {name:"글래스모피즘",desc:"Blue Glass", icon:"🫧", swatch:"linear-gradient(135deg,#050e2e 30%,#38bdf888)"},
+  terminal:{name:"터미널",      desc:"CRT Green",  icon:"💻", swatch:"linear-gradient(135deg,#020d02,#0e280e)"},
+  sakura:  {name:"사쿠라",      desc:"Soft Pink",  icon:"🌸", swatch:"linear-gradient(135deg,#fdf0f3,#f5ccd8)"},
+};
+
+const LANGUAGES = [
+  {code:"auto",name:"자동 감지"},{code:"ko",name:"한국어"},{code:"en",name:"English"},
+  {code:"ja",name:"日本語"},{code:"zh-CN",name:"中文 (간체)"},{code:"zh-TW",name:"中文 (번체)"},
+  {code:"es",name:"Español"},{code:"fr",name:"Français"},{code:"de",name:"Deutsch"},
+  {code:"ru",name:"Русский"},{code:"pt",name:"Português"},{code:"ar",name:"العربية"},
+  {code:"it",name:"Italiano"},{code:"vi",name:"Tiếng Việt"},{code:"th",name:"ภาษาไทย"},
+  {code:"id",name:"Bahasa Indonesia"},{code:"nl",name:"Nederlands"},
+  {code:"pl",name:"Polski"},{code:"tr",name:"Türkçe"},{code:"hi",name:"हिन्दी"},
+];
+
+const MODEL_COLORS = ["#6366f1","#38bdf8","#34d399","#f59e0b","#f472b6","#a78bfa","#fb923c","#60a5fa"];
+
+const DEFAULT_PROMPT = `You are a professional translator. Translate the following text from {source_language} to {target_language}.\nReturn only the translated text without explanations.`;
+
+// ═══════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════
+let state = {
+  theme: "dark",
+  activeModelId: null,
+  // models: [{id, type:"vertex"|"custom", name, color, ...fields}]
+  models: [],
+  params: {temperature:0.3, maxTokens:2000, topP:0.9, topK:40},
+  prompts: [{id:1, name:"기본 번역", content:DEFAULT_PROMPT, locked:true}],
+  activePromptId: 1,
+  history: [],
+  srcLang: "auto", tgtLang: "ko",
+  panel: null,
+};
+
+// Token cache per model id — memory only
+const tokenCache = {}; // {modelId: {token, expiresAt}}
+
+function save(){try{localStorage.setItem("ait-v4",JSON.stringify({...state,panel:null}));}catch(e){}}
+function load(){try{const r=localStorage.getItem("ait-v4");if(r)state={...state,...JSON.parse(r),panel:null};}catch(e){}}
+
+function getModel(id){return state.models.find(m=>m.id===id)||null;}
+function activeModel(){return getModel(state.activeModelId);}
+function nextColor(){return MODEL_COLORS[state.models.length%MODEL_COLORS.length];}
+
+// ═══════════════════════════════════════════════════
+// VERTEX AUTH
+// ═══════════════════════════════════════════════════
+function b64u(s){return btoa(s).replace(/=/g,"").replace(/\+/g,"-").replace(/\//g,"_")}
+function b64uBytes(buf){return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/=/g,"").replace(/\+/g,"-").replace(/\//g,"_")}
+
+async function buildJWT(m){
+  const now=Math.floor(Date.now()/1000);
+  const hdr=b64u(JSON.stringify({alg:"RS256",typ:"JWT"}));
+  const pay=b64u(JSON.stringify({iss:m.email,sub:m.email,aud:"https://oauth2.googleapis.com/token",
+    scope:"https://www.googleapis.com/auth/cloud-platform",iat:now,exp:now+3600}));
+  const si=`${hdr}.${pay}`;
+  const pem=m.privateKey.replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\s/g,"");
+  const der=Uint8Array.from(atob(pem),c=>c.charCodeAt(0));
+  const ck=await crypto.subtle.importKey("pkcs8",der.buffer,{name:"RSASSA-PKCS1-v1_5",hash:"SHA-256"},false,["sign"]);
+  const sig=await crypto.subtle.sign("RSASSA-PKCS1-v1_5",ck,new TextEncoder().encode(si));
+  return `${si}.${b64uBytes(sig)}`;
+}
+
+async function getVertexToken(m, forceRefresh=false){
+  const now=Date.now();
+  const cache=tokenCache[m.id];
+  if(!forceRefresh&&cache&&cache.token&&cache.expiresAt>now+300000) return cache.token;
+  if(!m.privateKey||!m.email) throw new Error("Private Key 또는 Email이 설정되지 않았습니다.");
+  const jwt=await buildJWT(m);
+  const resp=await fetch("https://oauth2.googleapis.com/token",{
+    method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},
+    body:`grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${jwt}`,
+  });
+  const data=await resp.json();
+  if(!resp.ok) throw new Error(data.error_description||data.error||"토큰 발급 실패");
+  tokenCache[m.id]={token:data.access_token,expiresAt:now+(data.expires_in||3600)*1000};
+  return data.access_token;
+}
+
+// ═══════════════════════════════════════════════════
+// PARSE EXTRA PARAMS
+// ═══════════════════════════════════════════════════
+function parseExtraParams(raw){
+  const body={}, headers={};
+  if(!raw||!raw.trim()) return {body,headers};
+  for(const line of raw.split("\n")){
+    const l=line.trim(); if(!l||!l.includes("=")) continue;
+    const idx=l.indexOf("=");
+    const key=l.slice(0,idx).trim();
+    let val=l.slice(idx+1).trim();
+    // parse value
+    let parsed;
+    if(val==="true") parsed=true;
+    else if(val==="false") parsed=false;
+    else if(val==="null"||val==="{{none}}") parsed=null;
+    else if(!isNaN(val)&&val!=="") parsed=Number(val);
+    else { try{parsed=JSON.parse(val);}catch{parsed=val;} }
+    if(key.startsWith("header::")) headers[key.slice(8)]=String(l.slice(idx+1).trim());
+    else body[key]=parsed;
+  }
+  return {body,headers};
+}
+
+// ═══════════════════════════════════════════════════
+// API CALLS
+// ═══════════════════════════════════════════════════
+async function callVertex(m, system, text, params){
+  const token=await getVertexToken(m);
+  const isAnthropic=m.modelName.startsWith("claude");
+  const publisher=isAnthropic?"anthropic":"google";
+  const endpoint=isAnthropic?"rawPredict":"generateContent";
+  const url=`https://${m.region}-aiplatform.googleapis.com/v1/projects/${m.projectId}/locations/${m.region}/publishers/${publisher}/models/${m.modelName}:${endpoint}`;
+  let body;
+  if(isAnthropic){
+    body={anthropic_version:"vertex-2023-10-16",max_tokens:params.maxTokens,
+      temperature:params.temperature,top_p:params.topP,top_k:params.topK,
+      system,messages:[{role:"user",content:text}]};
+  } else {
+    body={contents:[{parts:[{text:system+"\n\n"+text}]}],
+      generationConfig:{temperature:params.temperature,maxOutputTokens:params.maxTokens,topP:params.topP,topK:params.topK}};
+  }
+  const resp=await fetch(url,{method:"POST",
+    headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"},
+    body:JSON.stringify(body)});
+  const data=await resp.json();
+  if(!resp.ok){if(resp.status===401)delete tokenCache[m.id];throw new Error(data.error?.message||"Vertex AI 오류");}
+  return isAnthropic?data.content[0].text:data.candidates[0].content.parts[0].text;
+}
+
+async function callCustom(m, system, text, params){
+  const {body:extra, headers:extraHdrs}=parseExtraParams(m.extraParams);
+  const baseHeaders={"Content-Type":"application/json",...extraHdrs};
+  if(m.key) baseHeaders["Authorization"]=`Bearer ${m.key}`;
+  const body={
+    model:m.modelName,
+    messages:[{role:"system",content:system},{role:"user",content:text}],
+    temperature:params.temperature,
+    max_tokens:params.maxTokens,
+    top_p:params.topP,
+    ...extra,
+  };
+  // remove null values
+  Object.keys(body).forEach(k=>{if(body[k]===null)delete body[k];});
+  const resp=await fetch(m.url,{method:"POST",headers:baseHeaders,body:JSON.stringify(body)});
+  const data=await resp.json();
+  if(!resp.ok) throw new Error(data.error?.message||JSON.stringify(data.error)||"API 오류");
+  return data.choices[0].message.content;
+}
+
+// ═══════════════════════════════════════════════════
+// PROMPT
+// ═══════════════════════════════════════════════════
+function buildPrompt(){
+  const p=state.prompts.find(x=>x.id===state.activePromptId)||state.prompts[0];
+  const sl=LANGUAGES.find(l=>l.code===state.srcLang)?.name||state.srcLang;
+  const tl=LANGUAGES.find(l=>l.code===state.tgtLang)?.name||state.tgtLang;
+  return p.content.replace(/\{source_language\}/g,sl).replace(/\{target_language\}/g,tl);
+}
+
+// ═══════════════════════════════════════════════════
+// TRANSLATE
+// ═══════════════════════════════════════════════════
+async function translate(){
+  const text=document.getElementById("src-text").value.trim();
+  if(!text) return;
+  const m=activeModel();
+  if(!m){setResultText("❌ 모델을 선택해주세요. 우측 상단 ⚙️ 버튼에서 모델을 추가하고 선택하세요.",true);return;}
+  setLoading(true);
+  try{
+    const sp=buildPrompt(); let result="";
+    if(m.type==="vertex") result=await callVertex(m,sp,text,state.params);
+    else result=await callCustom(m,sp,text,state.params);
+    setResultText(result,false);
+    const prompt=state.prompts.find(p=>p.id===state.activePromptId);
+    state.history.unshift({id:Date.now(),src:text,tgt:result,srcLang:state.srcLang,tgtLang:state.tgtLang,
+      modelName:m.name,modelId:m.id,color:m.color,prompt:prompt?.name||"",ts:new Date().toISOString()});
+    state.history=state.history.slice(0,100);save();
+  }catch(e){setResultText("❌ "+e.message,true);}
+  setLoading(false);
+}
+
+// ═══════════════════════════════════════════════════
+// THEME
+// ═══════════════════════════════════════════════════
+function applyTheme(t){state.theme=t;document.documentElement.setAttribute("data-theme",t);renderThemeDD();save();}
+function renderThemeDD(){
+  const dd=document.getElementById("theme-dropdown");
+  dd.innerHTML='<div class="theme-dd-label">테마 선택</div>';
+  Object.entries(THEMES).forEach(([key,th])=>{
+    const btn=document.createElement("button");
+    btn.className="theme-opt"+(state.theme===key?" current":"");
+    btn.innerHTML=`<div class="theme-swatch" style="background:${th.swatch}">${th.icon}</div><div class="theme-info"><div class="theme-name">${th.name}</div><div class="theme-desc">${th.desc}</div></div><span class="theme-check">✓</span>`;
+    btn.addEventListener("click",()=>{applyTheme(key);toggleThemeDD(false);});
+    dd.appendChild(btn);
+  });
+}
+function toggleThemeDD(f){const dd=document.getElementById("theme-dropdown"),o=f!==undefined?f:!dd.classList.contains("open");dd.classList.toggle("open",o);document.getElementById("btn-theme").classList.toggle("active",o);}
+
+// ═══════════════════════════════════════════════════
+// MODEL PICKER (topbar)
+// ═══════════════════════════════════════════════════
+function renderModelPickerBtn(){
+  const m=activeModel();
+  const dot=document.getElementById("mpb-dot");
+  const name=document.getElementById("mpb-name");
+  const sub=document.getElementById("mpb-sub");
+  if(m){
+    dot.style.background=m.color;
+    name.textContent=m.name;
+    sub.textContent=m.type==="vertex"?`Vertex AI · ${m.modelName||"—"}`:`Custom · ${m.modelName||m.url||"—"}`;
+  } else {
+    dot.style.background="var(--muted2)";
+    name.textContent="모델을 선택하세요";
+    sub.textContent="⚙️ 우측 버튼에서 모델을 추가하세요";
+  }
+  renderTranslateBtn();
+}
+
+function renderModelPickerDropdown(){
+  const dd=document.getElementById("model-picker-dropdown");
+  dd.innerHTML="";
+  if(!state.models.length){
+    dd.innerHTML='<div class="mpd-empty">아직 모델이 없습니다.<br>⚙️ 버튼에서 추가하세요.</div>';
+    return;
+  }
+  const lbl=document.createElement("div"); lbl.className="mpd-label"; lbl.textContent="모델 선택"; dd.appendChild(lbl);
+  state.models.forEach(m=>{
+    const item=document.createElement("div");
+    item.className="mpd-item"+(m.id===state.activeModelId?" selected":"");
+    item.innerHTML=`<div class="mpd-dot" style="background:${m.color}"></div><div class="mpd-info"><div class="mpd-name">${m.name}</div><div class="mpd-model">${m.type==="vertex"?`Vertex · ${m.modelName||"—"}`:`Custom · ${m.url||"—"}`}</div></div><span class="mpd-check">✓</span>`;
+    item.addEventListener("click",()=>{state.activeModelId=m.id;save();renderModelPickerBtn();renderModelPickerDropdown();toggleModelPicker(false);});
+    dd.appendChild(item);
+  });
+}
+
+function toggleModelPicker(f){
+  const dd=document.getElementById("model-picker-dropdown"),btn=document.getElementById("model-picker-btn");
+  const o=f!==undefined?f:!dd.classList.contains("open");
+  if(o) renderModelPickerDropdown();
+  dd.classList.toggle("open",o);
+  btn.classList.toggle("active",o);
+}
+
+// ═══════════════════════════════════════════════════
+// MODEL EDITOR
+// ═══════════════════════════════════════════════════
+let editingModelId=null; // null=new
+let currentType="vertex";
+
+function showModelsList(){
+  document.getElementById("models-list-view").style.display="";
+  document.getElementById("model-editor").style.display="none";
+  renderModelsList();
+}
+
+function showModelEditor(id){
+  editingModelId=id;
+  const m=id?getModel(id):null;
+  document.getElementById("me-title").textContent=id?"모델 편집":"새 모델";
+  document.getElementById("models-list-view").style.display="none";
+  document.getElementById("model-editor").style.display="flex";
+  document.getElementById("model-editor").style.flexDirection="flex";
+
+  if(m){
+    switchEditorType(m.type);
+    if(m.type==="vertex"){
+      document.getElementById("v-name").value=m.name||"";
+      document.getElementById("v-model").value=m.modelName||"";
+      document.getElementById("v-project").value=m.projectId||"";
+      document.getElementById("v-email").value=m.email||"";
+      document.getElementById("v-key").value=m.privateKey||"";
+      document.getElementById("v-region").value=m.region||"us-central1";
+      setVertexTestStatus("idle","미테스트");
+    } else {
+      document.getElementById("c-name").value=m.name||"";
+      document.getElementById("c-model").value=m.modelName||"";
+      document.getElementById("c-url").value=m.url||"";
+      document.getElementById("c-key").value=m.key||"";
+      document.getElementById("c-params").value=m.extraParams||"";
+    }
+  } else {
+    switchEditorType("vertex");
+    ["v-name","v-model","v-project","v-email","v-key","c-name","c-model","c-url","c-key","c-params"].forEach(id=>document.getElementById(id).value="");
+    document.getElementById("v-region").value="us-central1";
+    setVertexTestStatus("idle","미테스트");
+  }
+}
+
+function switchEditorType(t){
+  currentType=t;
+  document.getElementById("form-vertex").style.display=t==="vertex"?"flex":"none";
+  document.getElementById("form-custom").style.display=t==="custom"?"flex":"none";
+  document.querySelectorAll(".panel-tab").forEach(b=>b.classList.toggle("active",b.dataset.type===t));
+}
+
+function saveModel(){
+  const type=currentType;
+  let m={};
+  if(type==="vertex"){
+    const name=document.getElementById("v-name").value.trim();
+    const modelName=document.getElementById("v-model").value.trim();
+    const projectId=document.getElementById("v-project").value.trim();
+    const email=document.getElementById("v-email").value.trim();
+    const privateKey=document.getElementById("v-key").value.trim();
+    const region=document.getElementById("v-region").value;
+    if(!name||!modelName||!projectId||!email||!privateKey){alert("모든 필드를 입력해주세요.");return;}
+    m={type:"vertex",name,modelName,projectId,email,privateKey,region};
+  } else {
+    const name=document.getElementById("c-name").value.trim();
+    const modelName=document.getElementById("c-model").value.trim();
+    const url=document.getElementById("c-url").value.trim();
+    const key=document.getElementById("c-key").value.trim();
+    const extraParams=document.getElementById("c-params").value;
+    if(!name||!url){alert("이름과 URL을 입력해주세요.");return;}
+    m={type:"custom",name,modelName,url,key,extraParams};
+  }
+  if(editingModelId){
+    const old=getModel(editingModelId);
+    m={...old,...m};
+    state.models=state.models.map(x=>x.id===editingModelId?m:x);
+    if(tokenCache[editingModelId]) delete tokenCache[editingModelId];
+  } else {
+    m.id="m_"+Date.now();
+    m.color=nextColor();
+    state.models.push(m);
+    if(!state.activeModelId) state.activeModelId=m.id;
+  }
+  save();
+  renderModelPickerBtn();
+  showModelsList();
+}
+
+function deleteModel(id){
+  if(!confirm("이 모델을 삭제할까요?")) return;
+  state.models=state.models.filter(x=>x.id!==id);
+  if(state.activeModelId===id) state.activeModelId=state.models[0]?.id||null;
+  if(tokenCache[id]) delete tokenCache[id];
+  save();renderModelPickerBtn();renderModelsList();
+}
+
+function renderModelsList(){
+  const c=document.getElementById("models-list");c.innerHTML="";
+  if(!state.models.length){c.innerHTML='<div class="empty-msg">아직 모델이 없습니다.<br>위 버튼으로 추가해보세요!</div>';return;}
+  state.models.forEach(m=>{
+    const div=document.createElement("div");
+    div.className="model-card"+(m.id===state.activeModelId?" active-model":"");
+    const info=m.type==="vertex"?`${m.projectId||"—"} · ${m.region||"—"} · ${m.modelName||"—"}`:`${m.url||"—"} · ${m.modelName||"—"}`;
+    div.innerHTML=`<div class="mc-header"><div class="mc-dot" style="background:${m.color}"></div><div class="mc-name">${m.name}</div><span class="mc-type">${m.type==="vertex"?"Vertex AI":"Custom"}</span><div class="mc-actions"><button class="mc-act-btn${m.id===state.activeModelId?" use":""}" data-use="${m.id}">${m.id===state.activeModelId?"✓ 사용중":"사용"}</button><button class="mc-act-btn" data-edit="${m.id}">편집</button><button class="mc-act-btn" data-del="${m.id}" style="color:#f87171">삭제</button></div></div><div class="mc-info">${info}</div>`;
+    div.querySelector("[data-use]").addEventListener("click",()=>{state.activeModelId=m.id;save();renderModelPickerBtn();renderModelsList();});
+    div.querySelector("[data-edit]").addEventListener("click",()=>showModelEditor(m.id));
+    div.querySelector("[data-del]").addEventListener("click",()=>deleteModel(m.id));
+    c.appendChild(div);
+  });
+}
+
+function setVertexTestStatus(status,msg){
+  const el=document.getElementById("v-token-status");
+  el.className="token-status";
+  if(status==="ok")el.classList.add("ok");
+  else if(status==="err")el.classList.add("err");
+  else el.classList.add("idle");
+  el.textContent=(status==="ok"?"✓ ":status==="err"?"✗ ":"● ")+msg;
+}
+
+// ═══════════════════════════════════════════════════
+// RENDER HELPERS
+// ═══════════════════════════════════════════════════
+function renderTranslateBtn(){
+  const btn=document.getElementById("translate-btn");
+  const m=activeModel();
+  const color=m?.color||"var(--accent)";
+  btn.style.background=`linear-gradient(135deg,${color}cc,${color})`;
+  btn.style.boxShadow=`0 0 18px ${color}44`;
+}
+
+function renderLangOptions(){
+  const s=document.getElementById("src-lang"),t=document.getElementById("tgt-lang");
+  s.innerHTML="";t.innerHTML="";
+  LANGUAGES.forEach(l=>{
+    s.appendChild(Object.assign(new Option(l.name,l.code),{selected:l.code===state.srcLang}));
+    if(l.code!=="auto") t.appendChild(Object.assign(new Option(l.name,l.code),{selected:l.code===state.tgtLang}));
+  });
+}
+
+function renderPromptPills(){
+  const c=document.getElementById("prompt-pills");c.innerHTML="";
+  state.prompts.forEach(p=>{const b=document.createElement("button");b.className="prompt-pill"+(p.id===state.activePromptId?" active":"");b.textContent=p.name;b.onclick=()=>{state.activePromptId=p.id;save();renderPromptPills();};c.appendChild(b);});
+}
+
+function renderPromptsList(){
+  const c=document.getElementById("prompts-list");c.innerHTML="";
+  state.prompts.forEach(p=>{
+    const div=document.createElement("div");div.className="prompt-item"+(p.id===state.activePromptId?" active-prompt":"");
+    div.innerHTML=`<div class="prompt-item-header"><span class="prompt-name" style="color:${p.id===state.activePromptId?"var(--accent2)":"var(--text)"}">${p.name}</span><div class="prompt-actions"><button class="p-btn use ${p.id===state.activePromptId?"using":""}">${p.id===state.activePromptId?"✓ 사용중":"사용"}</button><button class="p-btn edit">편집</button>${!p.locked?'<button class="p-btn del">삭제</button>':""}</div></div><div class="prompt-preview">${p.content}</div>`;
+    div.querySelector(".p-btn.use").addEventListener("click",()=>{state.activePromptId=p.id;save();renderPromptPills();renderPromptsList();});
+    div.querySelector(".p-btn.edit").addEventListener("click",()=>openPromptEditor(p.id));
+    div.querySelector(".p-btn.del")?.addEventListener("click",()=>{state.prompts=state.prompts.filter(x=>x.id!==p.id);if(state.activePromptId===p.id)state.activePromptId=state.prompts[0].id;save();renderPromptPills();renderPromptsList();});
+    c.appendChild(div);
+  });
+}
+
+function renderHistoryList(){
+  const c=document.getElementById("history-list");c.innerHTML="";
+  if(!state.history.length){c.innerHTML='<div class="empty-msg">아직 번역 기록이 없습니다</div>';return;}
+  state.history.forEach(h=>{
+    const div=document.createElement("div");div.className="hist-item";
+    const ts=new Date(h.ts).toLocaleString("ko-KR",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"});
+    div.innerHTML=`<div class="hist-meta"><span style="font-size:10px;color:${h.color||"var(--accent)"};font-weight:600">${h.modelName||"—"}</span><span style="font-size:9px;color:var(--muted2)">${ts}</span></div><div class="hist-src">${h.src}</div><div class="hist-tgt">${h.tgt}</div><div class="hist-footer">${LANGUAGES.find(l=>l.code===h.srcLang)?.name||h.srcLang} → ${LANGUAGES.find(l=>l.code===h.tgtLang)?.name||h.tgtLang} · ${h.prompt}</div>`;
+    div.addEventListener("click",()=>{document.getElementById("src-text").value=h.src;setResultText(h.tgt,false);state.srcLang=h.srcLang;state.tgtLang=h.tgtLang;renderLangOptions();updateCharCount();});
+    c.appendChild(div);
+  });
+}
+
+function setResultText(text,isError){
+  const box=document.getElementById("result-box"),cb=document.getElementById("copy-btn");
+  if(text){box.textContent=text;box.style.color=isError?"#f87171":"var(--text)";box.style.borderColor=isError?"rgba(239,68,68,.4)":"var(--border2)";cb.style.display=isError?"none":"";if(!isError&&state.theme==="terminal")box.classList.add("loaded");}
+  else{box.innerHTML='<span style="color:var(--muted)">번역 결과</span>';cb.style.display="none";box.classList.remove("loaded");box.style.color="var(--text)";box.style.borderColor="var(--border2)";}
+}
+
+function setLoading(v){
+  const btn=document.getElementById("translate-btn"),box=document.getElementById("result-box");
+  const color=activeModel()?.color||"var(--accent)";
+  if(v){btn.textContent="⏳";btn.style.background="var(--surf2)";btn.style.boxShadow="none";box.classList.remove("loaded");box.innerHTML=`<span style="color:${color}">번역 중...</span>`;box.style.borderColor=color+"55";}
+  else{btn.textContent="→";renderTranslateBtn();}
+}
+
+function openPanel(name){
+  if(state.panel===name){closePanel();return;}
+  state.panel=name;
+  const titles={models:"⚙️ 모델 관리",prompts:"📝 프롬프트",history:"🕐 히스토리"};
+  document.getElementById("panel-title").textContent=titles[name];
+  ["models","prompts","history"].forEach(n=>document.getElementById("content-"+n).style.display=n===name?"flex":"none");
+  if(name==="models"){showModelsList();}
+  if(name==="prompts"){renderPromptsList();closePromptEditor();}
+  if(name==="history") renderHistoryList();
+  document.getElementById("panel").classList.add("open");
+  document.getElementById("editor").style.marginRight="400px";
+  ["btn-models","btn-prompts","btn-history"].forEach(id=>document.getElementById(id).classList.toggle("active",id.replace("btn-","")===name));
+}
+function closePanel(){state.panel=null;document.getElementById("panel").classList.remove("open");document.getElementById("editor").style.marginRight="0";["btn-models","btn-prompts","btn-history"].forEach(id=>document.getElementById(id).classList.remove("active"));}
+
+function openPromptEditor(id){
+  const p=id?state.prompts.find(x=>x.id===id):null;
+  document.getElementById("editor-title").textContent=id?"프롬프트 편집":"새 프롬프트";
+  document.getElementById("edit-name").value=p?.name||"";
+  document.getElementById("edit-content").value=p?.content||"";
+  document.getElementById("prompt-editor")._editId=id||null;
+  document.getElementById("prompt-list-view").classList.add("hidden");
+  document.getElementById("prompt-editor").style.display="flex";
+  document.getElementById("prompt-editor").style.flexDirection="column";
+}
+function closePromptEditor(){
+  document.getElementById("prompt-list-view").classList.remove("hidden");
+  document.getElementById("prompt-editor").style.display="none";
+}
+
+function updateCharCount(){document.getElementById("char-count").textContent=document.getElementById("src-text").value.length+"자";}
+function syncParams(){
+  document.getElementById("sl-temp").value=state.params.temperature;
+  document.getElementById("sl-tokens").value=state.params.maxTokens;
+  document.getElementById("sl-topp").value=state.params.topP;
+  document.getElementById("sl-topk").value=state.params.topK;
+  document.getElementById("val-temp").textContent=state.params.temperature.toFixed(2);
+  document.getElementById("val-tokens").textContent=state.params.maxTokens;
+  document.getElementById("val-topp").textContent=state.params.topP.toFixed(2);
+  document.getElementById("val-topk").textContent=state.params.topK;
+}
+
+// ═══════════════════════════════════════════════════
+// EVENTS
+// ═══════════════════════════════════════════════════
+document.getElementById("model-picker-btn").addEventListener("click",e=>{e.stopPropagation();toggleModelPicker();});
+document.addEventListener("click",e=>{
+  if(!document.getElementById("model-picker-wrap").contains(e.target)) toggleModelPicker(false);
+  if(!document.getElementById("theme-picker-wrap").contains(e.target)) toggleThemeDD(false);
+});
+
+document.getElementById("src-lang").addEventListener("change",e=>{state.srcLang=e.target.value;save();});
+document.getElementById("tgt-lang").addEventListener("change",e=>{state.tgtLang=e.target.value;save();});
+document.getElementById("swap-btn").addEventListener("click",()=>{
+  if(state.srcLang==="auto")return;
+  const t=state.srcLang;state.srcLang=state.tgtLang;state.tgtLang=t;
+  const st=document.getElementById("src-text").value,tt=document.getElementById("result-box").textContent;
+  document.getElementById("src-text").value=tt;setResultText(st,false);renderLangOptions();updateCharCount();save();
+});
+
+document.getElementById("src-text").addEventListener("input",updateCharCount);
+document.getElementById("src-text").addEventListener("keydown",e=>{if(e.ctrlKey&&e.key==="Enter"){e.preventDefault();translate();}});
+document.getElementById("translate-btn").addEventListener("click",translate);
+document.getElementById("copy-btn").addEventListener("click",()=>{
+  navigator.clipboard?.writeText(document.getElementById("result-box").textContent);
+  document.getElementById("copy-btn").textContent="✓";
+  setTimeout(()=>{document.getElementById("copy-btn").textContent="복사";},1500);
+});
+
+[{sl:"sl-temp",vl:"val-temp",k:"temperature",f:v=>v.toFixed(2)},
+ {sl:"sl-tokens",vl:"val-tokens",k:"maxTokens",f:v=>v},
+ {sl:"sl-topp",vl:"val-topp",k:"topP",f:v=>v.toFixed(2)},
+ {sl:"sl-topk",vl:"val-topk",k:"topK",f:v=>v}]
+.forEach(({sl,vl,k,f})=>document.getElementById(sl).addEventListener("input",e=>{const v=Number(e.target.value);state.params[k]=v;document.getElementById(vl).textContent=f(v);save();}));
+
+document.getElementById("btn-models").addEventListener("click",()=>openPanel("models"));
+document.getElementById("btn-prompts").addEventListener("click",()=>openPanel("prompts"));
+document.getElementById("btn-history").addEventListener("click",()=>openPanel("history"));
+document.getElementById("panel-close").addEventListener("click",closePanel);
+document.getElementById("btn-theme").addEventListener("click",e=>{e.stopPropagation();toggleThemeDD();});
+
+// Model editor events
+document.getElementById("new-model-btn").addEventListener("click",()=>showModelEditor(null));
+document.getElementById("me-back").addEventListener("click",showModelsList);
+document.getElementById("me-cancel").addEventListener("click",showModelsList);
+document.getElementById("me-save").addEventListener("click",saveModel);
+document.querySelectorAll(".panel-tab").forEach(b=>b.addEventListener("click",()=>switchEditorType(b.dataset.type)));
+
+// Vertex token test
+document.getElementById("v-test-btn").addEventListener("click",async()=>{
+  setVertexTestStatus("idle","테스트 중...");
+  try{
+    const tempModel={
+      id:"_test_",
+      email:document.getElementById("v-email").value.trim(),
+      privateKey:document.getElementById("v-key").value.trim(),
+    };
+    delete tokenCache["_test_"];
+    await getVertexToken(tempModel,true);
+    const exp=Math.round((tokenCache["_test_"].expiresAt-Date.now())/60000);
+    setVertexTestStatus("ok",`연결 성공 — ${exp}분 유효`);
+    delete tokenCache["_test_"];
+  }catch(e){setVertexTestStatus("err",e.message.slice(0,55));}
+});
+
+// Prompt editor events
+document.getElementById("new-prompt-btn").addEventListener("click",()=>openPromptEditor(null));
+document.getElementById("editor-close").addEventListener("click",closePromptEditor);
+document.getElementById("editor-save").addEventListener("click",()=>{
+  const name=document.getElementById("edit-name").value.trim();
+  const content=document.getElementById("edit-content").value.trim();
+  if(!name||!content) return;
+  const eid=document.getElementById("prompt-editor")._editId;
+  if(eid) state.prompts=state.prompts.map(p=>p.id===eid?{...p,name,content}:p);
+  else{const nid=Date.now();state.prompts.push({id:nid,name,content});state.activePromptId=nid;}
+  save();closePromptEditor();renderPromptPills();renderPromptsList();
+});
+
+// ═══════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════
+load();
+applyTheme(state.theme);
+renderModelPickerBtn();
+renderLangOptions();
+renderPromptPills();
+syncParams();
+updateCharCount();
+</script>
+</body>
+</html>
