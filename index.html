@@ -598,8 +598,13 @@ async function callVertex(m, system, text, params){
   const isAnthropic=m.modelName.startsWith("claude");
   const publisher=isAnthropic?"anthropic":"google";
   const endpoint=isAnthropic?"rawPredict":"generateContent";
-  const apiHost=m.region==="global"?"global-aiplatform.googleapis.com":`${m.region}-aiplatform.googleapis.com`;
+
+  // global region uses root aiplatform.googleapis.com (no region prefix)
+  const apiHost=m.region==="global"
+    ?"aiplatform.googleapis.com"
+    :`${m.region}-aiplatform.googleapis.com`;
   const url=`https://${apiHost}/v1/projects/${m.projectId}/locations/${m.region}/publishers/${publisher}/models/${m.modelName}:${endpoint}`;
+
   let body;
   if(isAnthropic){
     body={anthropic_version:"vertex-2023-10-16",max_tokens:params.maxTokens,
@@ -609,11 +614,21 @@ async function callVertex(m, system, text, params){
     body={contents:[{parts:[{text:system+"\n\n"+text}]}],
       generationConfig:{temperature:params.temperature,maxOutputTokens:params.maxTokens,topP:params.topP,topK:params.topK}};
   }
-  const resp=await fetch(url,{method:"POST",
-    headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"},
-    body:JSON.stringify(body)});
+
+  const resp=await fetch(url,{
+    method:"POST",
+    headers:{
+      "Authorization":`Bearer ${token}`,
+      "Content-Type":"application/json",
+      "X-Goog-User-Project":m.projectId,
+    },
+    body:JSON.stringify(body),
+  });
   const data=await resp.json();
-  if(!resp.ok){if(resp.status===401)delete tokenCache[m.id];throw new Error(data.error?.message||"Vertex AI 오류");}
+  if(!resp.ok){
+    if(resp.status===401) delete tokenCache[m.id];
+    throw new Error(data.error?.message||JSON.stringify(data.error)||"Vertex AI 오류");
+  }
   return isAnthropic?data.content[0].text:data.candidates[0].content.parts[0].text;
 }
 
