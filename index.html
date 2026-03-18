@@ -611,8 +611,12 @@ async function callVertex(m, system, text, params){
       temperature:params.temperature,top_p:params.topP,top_k:params.topK,
       system,messages:[{role:"user",content:text}]};
   } else {
-    body={contents:[{parts:[{text:system+"\n\n"+text}]}],
-      generationConfig:{temperature:params.temperature,maxOutputTokens:params.maxTokens,topP:params.topP,topK:params.topK}};
+    // Gemini on Vertex: system prompt goes in systemInstruction, NOT contents
+    body={
+      systemInstruction:{parts:[{text:system}]},
+      contents:[{role:"user",parts:[{text:text}]}],
+      generationConfig:{temperature:params.temperature,maxOutputTokens:params.maxTokens,topP:params.topP,topK:params.topK},
+    };
   }
 
   const resp=await fetch(url,{
