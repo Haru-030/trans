@@ -401,6 +401,7 @@
             <div class="field-wrap">
               <label class="field-label">Region</label>
               <select class="inp" id="v-region">
+                <option value="global">🌐 global (Gemini 3.x / 신규모델 필수)</option>
                 <option value="us-central1">us-central1 (Iowa)</option>
                 <option value="us-east1">us-east1 (S.Carolina)</option>
                 <option value="us-east4">us-east4 (N.Virginia)</option>
@@ -417,7 +418,10 @@
               <span class="token-status idle" id="v-token-status">● 미테스트</span>
             </div>
             <div class="info-box" style="background:rgba(52,211,153,.06);border:1px solid rgba(52,211,153,.18)">
-              <p>💡 GCP 콘솔 → IAM → 서비스 계정 → 키 → JSON에서 값을 복사하세요.<br>필요 권한: <code style="background:var(--border2);padding:1px 4px;border-radius:2px">Vertex AI User</code></p>
+              <p>💡 GCP 콘솔 → IAM → 서비스 계정 → 키 → JSON에서 값을 복사하세요.<br>
+              필요 권한: <code style="background:var(--border2);padding:1px 4px;border-radius:2px">Vertex AI User</code><br>
+              ⚠️ <strong>Gemini 3.x / 3.1.x 모델은 Region을 반드시 <code style="background:var(--border2);padding:1px 4px;border-radius:2px">global</code>로 설정하세요.</strong><br>
+              Gemini 2.5 이하는 us-central1 등 일반 리전 사용 가능.</p>
             </div>
           </div>
 
@@ -594,7 +598,8 @@ async function callVertex(m, system, text, params){
   const isAnthropic=m.modelName.startsWith("claude");
   const publisher=isAnthropic?"anthropic":"google";
   const endpoint=isAnthropic?"rawPredict":"generateContent";
-  const url=`https://${m.region}-aiplatform.googleapis.com/v1/projects/${m.projectId}/locations/${m.region}/publishers/${publisher}/models/${m.modelName}:${endpoint}`;
+  const apiHost=m.region==="global"?"global-aiplatform.googleapis.com":`${m.region}-aiplatform.googleapis.com`;
+  const url=`https://${apiHost}/v1/projects/${m.projectId}/locations/${m.region}/publishers/${publisher}/models/${m.modelName}:${endpoint}`;
   let body;
   if(isAnthropic){
     body={anthropic_version:"vertex-2023-10-16",max_tokens:params.maxTokens,
